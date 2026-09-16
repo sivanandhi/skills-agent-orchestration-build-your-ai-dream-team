@@ -1,0 +1,44 @@
+{
+  "projects": [
+    {
+      "name": "Atlas mobile experience",
+      "description": "A faster, more focused mobile workflow for field teams.",
+      "owner": "Maya Chen",
+      "status": "on-track",
+      "priority": "high",
+      "progress": 72,
+      "dueDate": "Oct 18, 2026",
+      "recentActivity": "Prototype review completed yesterday."
+    },
+    {
+      "name": "Northstar reporting",
+      "description": "Self-serve reporting that gives leaders one source of truth.",
+      "owner": "Jordan Ellis",
+      "status": "at-risk",
+      "priority": "high",
+      "progress": 48,
+      "dueDate": "Oct 07, 2026",
+      "recentActivity": "Data validation is waiting on Finance."
+    },
+    {
+      "name": "Customer onboarding refresh",
+      "description": "A simpler path from sign-up to the first successful outcome.",
+      "owner": "Priya Shah",
+      "status": "on-track",
+      "priority": "medium",
+      "progress": 86,
+      "dueDate": "Sep 29, 2026",
+      "recentActivity": "New welcome flow is live for 25% of users."
+    },
+    {
+      "name": "Legacy API sunset",
+      "description": "A coordinated migration to the supported platform API.",
+      "owner": "Theo Martin",
+      "status": "blocked",
+      "priority": "medium",
+      "progress": 31,
+      "dueDate": "Nov 12, 2026",
+      "recentActivity": "Migration is blocked by a partner dependency."
+    }
+  ]
+}

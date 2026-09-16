@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="A focused view of project health, priorities, and recent activity."
+    />
+    <title>Project Pulse</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="dashboard">
+      <header class="dashboard-header">
+        <div>
+          <div class="dashboard-brand">Project Pulse</div>
+          <h1>Know where your work stands.</h1>
+          <p class="dashboard-intro">
+            A clear, current view of project health, momentum, and the work that needs
+            attention.
+          </p>
+        </div>
+        <div class="dashboard-actions">
+          <a class="primary-action" href="#projects">View projects</a>
+        </div>
+      </header>
+
+      <section class="project-summary" aria-label="Project summary">
+        <div class="summary-item">
+          <span class="summary-label">Total projects</span>
+          <strong class="summary-value" id="total-projects">—</strong>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">On track</span>
+          <strong class="summary-value" id="on-track-projects">—</strong>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Needs attention</span>
+          <strong class="summary-value" id="attention-projects">—</strong>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Average progress</span>
+          <strong class="summary-value" id="average-progress">—</strong>
+        </div>
+      </section>
+
+      <section id="projects" aria-labelledby="projects-title">
+        <div class="projects-heading">
+          <h2 id="projects-title">All projects</h2>
+          <p id="project-count" aria-live="polite">Loading project data…</p>
+        </div>
+        <div id="project-status" class="empty-state" role="status" aria-live="polite">
+          Loading projects…
+        </div>
+        <div class="project-grid" id="project-list" aria-live="polite" hidden></div>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        const projectList = document.querySelector("#project-list");
+        const projectStatus = document.querySelector("#project-status");
+        const projectCount = document.querySelector("#project-count");
+        const summary = {
+          total: document.querySelector("#total-projects"),
+          onTrack: document.querySelector("#on-track-projects"),
+          attention: document.querySelector("#attention-projects"),
+          progress: document.querySelector("#average-progress"),
+        };
+
+        const text = (value, fallback) =>
+          typeof value === "string" && value.trim() ? value.trim() : fallback;
+
+        const titleCase = (value) =>
+          value
+            .split("-")
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" ");
+
+        const createMeta = (label, value) => {
+          const wrapper = document.createElement("div");
+          const labelElement = document.createElement("strong");
+          labelElement.textContent = label;
+          const valueElement = document.createElement("span");
+          valueElement.textContent = value;
+          wrapper.append(labelElement, valueElement);
+          return wrapper;
+        };
+
+        const renderProject = (project) => {
+          const card = document.createElement("article");
+          card.className = "project-card";
+
+          const top = document.createElement("div");
+          top.className = "project-card__top";
+          const heading = document.createElement("div");
+          const name = document.createElement("h3");
+          name.textContent = text(project.name, "Untitled project");
+          heading.append(name);
+
+          const statusValue = text(project.status, "unknown").toLowerCase();
+          const status = document.createElement("span");
+          status.className = "status-badge";
+          status.dataset.status = statusValue;
+          status.textContent = titleCase(statusValue);
+          status.setAttribute("aria-label", `Status: ${status.textContent}`);
+          top.append(heading, status);
+
+          const description = document.createElement("p");
+          description.className = "project-card__description";
+          description.textContent = text(project.description, "No description provided.");
+
+          const progress = document.createElement("div");
+          progress.className = "progress";
+          const progressLabel = document.createElement("div");
+          progressLabel.className = "progress__label";
+          const progressName = document.createElement("span");
+          progressName.textContent = "Progress";
+          const progressValue = document.createElement("span");
+          progressValue.className = "progress__value";
+          const progressNumber = Number.isFinite(project.progress)
+            ? Math.min(100, Math.max(0, project.progress))
+            : 0;
+          progressValue.textContent = `${progressNumber}%`;
+          progressLabel.append(progressName, progressValue);
+          const progressBar = document.createElement("div");
+          progressBar.className = "progress-bar";
+          progressBar.setAttribute("role", "progressbar");
+          progressBar.setAttribute("aria-label", `${name.textContent} progress`);
+          progressBar.setAttribute("aria-valuemin", "0");
+          progressBar.setAttribute("aria-valuemax", "100");
+          progressBar.setAttribute("aria-valuenow", String(progressNumber));
+          const progressFill = document.createElement("span");
+          progressFill.style.setProperty("--progress", `${progressNumber}%`);
+          progressBar.append(progressFill);
+          progress.append(progressLabel, progressBar);
+
+          const meta = document.createElement("div");
+          meta.className = "project-card__meta";
+          const priorityValue = text(project.priority, "Not set").toLowerCase();
+          const priority = document.createElement("div");
+          const priorityLabel = document.createElement("strong");
+          priorityLabel.textContent = "Priority";
+          const priorityText = document.createElement("span");
+          priorityText.className = `priority priority--${priorityValue}`;
+          priorityText.textContent = titleCase(priorityValue);
+          priorityText.setAttribute("aria-label", `Priority: ${priorityText.textContent}`);
+          priority.append(priorityLabel, priorityText);
+          meta.append(
+            priority,
+            createMeta("Owner", text(project.owner, "Unassigned")),
+            createMeta("Due date", text(project.dueDate, "No due date")),
+            createMeta("Recent activity", text(project.recentActivity, "No recent activity."))
+          );
+
+          card.append(top, description, progress, meta);
+          return card;
+        };
+
+        const showError = (message) => {
+          projectList.hidden = true;
+          projectStatus.hidden = false;
+          projectStatus.textContent = message;
+          projectCount.textContent = "Unable to load projects";
+        };
+
+        fetch("project-data.json")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Project data request failed (${response.status}).`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            if (!data || !Array.isArray(data.projects)) {
+              throw new Error("Project data must contain a top-level projects array.");
+            }
+
+            const projects = data.projects;
+            projectStatus.hidden = true;
+            projectList.hidden = false;
+            projects.forEach((project) => projectList.append(renderProject(project)));
+            projectCount.textContent = `${projects.length} ${
+              projects.length === 1 ? "project" : "projects"
+            }`;
+            summary.total.textContent = projects.length;
+            const onTrack = projects.filter(
+              (project) => String(project.status).toLowerCase() === "on-track"
+            ).length;
+            summary.onTrack.textContent = onTrack;
+            summary.attention.textContent = projects.length - onTrack;
+            const average = projects.length
+              ? Math.round(
+                  projects.reduce(
+                    (total, project) => total + (Number(project.progress) || 0),
+                    0
+                  ) / projects.length
+                )
+              : 0;
+            summary.progress.textContent = `${average}%`;
+            if (!projects.length) {
+              projectStatus.hidden = false;
+              projectStatus.textContent = "No projects are available yet.";
+            }
+          })
+          .catch((error) => {
+            console.error(error);
+            showError("Project data could not be loaded. Please try again later.");
+          });
+      })();
+    </script>
+  </body>
+</html>
